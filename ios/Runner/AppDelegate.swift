@@ -163,7 +163,16 @@ class BlePeripheralManager: NSObject, CBPeripheralManagerDelegate {
     
     func sendMessage(_ message: String) -> Bool {
         guard let characteristic = chatCharacteristic, let data = message.data(using: .utf8) else { return false }
-        return peripheralManager?.updateValue(data, for: characteristic, onSubscribedCentrals: nil) ?? false
+        
+        let success = peripheralManager?.updateValue(data, for: characteristic, onSubscribedCentrals: nil) ?? false
+        
+        if !success {
+            print("iOS Peripheral: 데이터 전송 지연 또는 MTU 초과 (크기: \(data.count) bytes)")
+        } else {
+            print("iOS Peripheral: 데이터 전송 성공 (크기: \(data.count) bytes)")
+        }
+        
+        return success
     }
     
     // MARK: Delegates

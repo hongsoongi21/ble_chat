@@ -115,24 +115,28 @@ class BleCentralManager(private val context: Context) {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             Log.d(TAG, "Central 연결 상태 변경: $status -> $newState")
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                gatt.discoverServices()
-                Handler(Looper.getMainLooper()).post { 
-                    connectionSink?.success(mapOf(
-                        "state" to "CONNECTED", 
-                        "deviceId" to gatt.device.address,
-                        "role" to "CENTRAL" // 역할 추가
-                    )) 
-                }
+                // [추가] MTU 확장 요청 (최대 512바이트)
+                Log.d(TAG, "MTU 확장 요청 시작 (512)")
+                gatt.requestMtu(512)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-                Handler(Looper.getMainLooper()).post { 
-                    connectionSink?.success(mapOf(
-                        "state" to "DISCONNECTED", 
-                        "deviceId" to gatt.device.address,
-                        "role" to "CENTRAL" // 역할 추가
-                    )) 
-                }
+// ... (중략)
                 gatt.close()
                 bluetoothGatt = null
+            }
+        }
+
+        override fun onMtuChanged(gatt: BluetoothGatt, mtu: Int, status: Int) {
+            super.onMtuChanged(gatt, mtu, status)
+            Log.d(TAG, "MTU 변경 완료: $mtu (Status: $status)")
+            // MTU 설정이 완료된 후 서비스 탐색 시작
+            gatt.discoverServices()
+            
+            Handler(Looper.getMainLooper()).post { 
+                connectionSink?.success(mapOf(
+                    "state" to "CONNECTED", 
+                    "deviceId" to gatt.device.address,
+                    "role" to "CENTRAL"
+                )) 
             }
         }
 
