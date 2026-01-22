@@ -20,6 +20,9 @@ class ChatController extends GetxController with WidgetsBindingObserver {
   var messages = <ChatMessage>[].obs;   // 주고받은 채팅 메시지 리스트
   var connectedDevice = Rxn<BleDevice>(); // 현재 연결된 상대방 기기 정보
 
+  // 연결 해제 처리 중인지 여부 (중복 이벤트 및 네이티브 충돌 방지)
+  bool _isProcessingDisconnect = false;
+
   // 스트림 구독 해제를 위한 객체들
   StreamSubscription? _scanSub;
   StreamSubscription? _connSub;
@@ -216,9 +219,15 @@ class ChatController extends GetxController with WidgetsBindingObserver {
 
   /// 연결 해제 시 내부 상태 초기화 및 UI 정리
   void _handleDisconnection() {
+    if (_isProcessingDisconnect) {
+      AppLogger.debug('이미 연결 해제 처리 중이므로 이벤트를 무시합니다.', tag: 'ChatController');
+      return;
+    }
+    _isProcessingDisconnect = true;
+
     AppLogger.warn('연결 해제 처리 시작 (현재 경로: ${Get.currentRoute})', tag: 'ChatController');
     
-    // 1. 모든 다이얼로그/로딩창 강제 종료 (스택이 빌 때까지)
+    // 1. 모든 다이얼로그/로딩창 즉시 종료
     while (Get.isDialogOpen == true) {
       Get.back();
     }
@@ -229,18 +238,26 @@ class ChatController extends GetxController with WidgetsBindingObserver {
     messages.clear();
     
     // 3. 채팅 화면 탈출 로직
-    // 안드로이드/iOS 라우트 명칭 차이를 고려하여 '/chat'과 'ChatPage' 모두 체크
     final currentRoute = Get.currentRoute;
     if (currentRoute.contains('chat') || currentRoute.contains('ChatPage')) {
       AppLogger.info('채팅 페이지 탈출 시도 (from $currentRoute)', tag: 'ChatController');
-      // 스캔 페이지가 나올 때까지 또는 루트까지 모든 화면을 닫음
       Get.until((route) => Get.currentRoute == '/scan' || Get.currentRoute == '/');
     }
     
-    // 4. 광고 모드 복구 (Peripheral 모드일 때만)
+    // 4. 광고 모드 복구 (충분한 지연 시간 후 실행)
+    // 네이티브가 이전 연결을 완전히 정리할 시간을 줍니다.
     if (isPeripheralMode.value) {
-       AppLogger.info('연결 해제 감지: 광고 모드 재활성화 확인', tag: 'ChatController');
-       _bleManager.startPeripheralMode(); 
+       AppLogger.info('1.5초 후 광고 모드 재활성화를 시도합니다...', tag: 'ChatController');
+       Future.delayed(const Duration(milliseconds: 1500), () async {
+         if (isPeripheralMode.value && connectionState.value == 'DISCONNECTED') {
+           await _bleManager.startPeripheralMode();
+           AppLogger.info('광고 모드 재활성화 완료', tag: 'ChatController');
+         }
+         _isProcessingDisconnect = false; // 모든 처리가 끝난 후 플래그 해제
+       });
+    } else {
+      // 1초 후 플래그 해제
+      Future.delayed(const Duration(seconds: 1), () => _isProcessingDisconnect = false);
     }
 
     Get.snackbar(
