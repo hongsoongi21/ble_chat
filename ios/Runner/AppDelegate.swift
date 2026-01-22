@@ -137,7 +137,7 @@ class BlePeripheralManager: NSObject, CBPeripheralManagerDelegate {
         
         chatCharacteristic = CBMutableCharacteristic(
             type: CHARACTERISTIC_UUID,
-            properties: [.write, .notify],
+            properties: [.write, .writeWithoutResponse, .notify], // writeWithoutResponse 추가
             value: nil,
             permissions: [.writeable]
         )
@@ -255,7 +255,7 @@ class BleCentralManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegat
     
     func disconnect() {
         if let peripheral = discoveredPeripheral {
-            connectionSink?(["state": "DISCONNECTED", "deviceId": peripheral.identifier.uuidString])
+            connectionSink?(["state": "DISCONNECTED", "deviceId": peripheral.identifier.uuidString, "role": "CENTRAL"])
             centralManager?.cancelPeripheralConnection(peripheral)
         }
         discoveredPeripheral = nil
@@ -297,17 +297,17 @@ class BleCentralManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegat
         print("iOS Central: 연결 성공")
         peripheral.delegate = self
         peripheral.discoverServices([SERVICE_UUID])
-        connectionSink?(["state": "CONNECTED", "deviceId": peripheral.identifier.uuidString])
+        connectionSink?(["state": "CONNECTED", "deviceId": peripheral.identifier.uuidString, "role": "CENTRAL"])
     }
     
     func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         print("iOS Central: 연결 실패")
-        connectionSink?(["state": "DISCONNECTED", "deviceId": peripheral.identifier.uuidString])
+        connectionSink?(["state": "DISCONNECTED", "deviceId": peripheral.identifier.uuidString, "role": "CENTRAL"])
     }
     
     func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
-        print("iOS Central: 연결 해제됨 (에러: \(error?.localizedDescription ?? "없음"))")
-        connectionSink?(["state": "DISCONNECTED", "deviceId": peripheral.identifier.uuidString])
+        print("iOS Central: 연결 해제됨")
+        connectionSink?(["state": "DISCONNECTED", "deviceId": peripheral.identifier.uuidString, "role": "CENTRAL"])
         self.targetCharacteristic = nil
         self.discoveredPeripheral = nil
     }
