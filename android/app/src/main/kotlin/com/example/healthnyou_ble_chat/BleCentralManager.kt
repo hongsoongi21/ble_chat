@@ -119,7 +119,7 @@ class BleCentralManager(private val context: Context) {
                 Log.d(TAG, "MTU 확장 요청 시작 (512)")
                 gatt.requestMtu(512)
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
-// ... (중략)
+                Handler(Looper.getMainLooper()).post { connectionSink?.success(mapOf("state" to "DISCONNECTED", "deviceId" to gatt.device.address, "role" to "CENTRAL")) }
                 gatt.close()
                 bluetoothGatt = null
             }
