@@ -1,0 +1,95 @@
+@startuml BLE_System_Architecture
+title HealthNYou BLE Chat - System Hierarchy (계층 구조)
+
+package "Flutter Layer (Dart)" {
+    [Chat UI] as UI
+    [ChatController] as Controller
+    note right of Controller : 비즈니스 로직 및 상태 관리
+}
+
+package "Bridge Layer (Platform Channels)" {
+    interface "MethodChannel" as MC
+    interface "EventChannels" as EC
+    
+    note right of MC : 명령 전달 (Flutter -> Native)\n- startScan\n- connect\n- sendMessage
+    note right of EC : 데이터 스트림 (Native -> Flutter)\n- scan_results\n- connection_state\n- messages
+}
+
+package "Native Layer (iOS/Android)" {
+    component "AppDelegate / MainActivity" as EntryPoint
+    
+    node "BLE Logic" {
+        [BleCentralManager] as Central
+        [BlePeripheralManager] as Peripheral
+    }
+
+    database "CoreBluetooth / Android BLE" as OS_BLE
+}
+
+UI --> Controller : 유저 입력
+Controller --> MC : invokeMethod()
+Controller <.. EC : stream.listen()
+
+MC ==> EntryPoint
+EntryPoint --> Central : Route Calls
+EntryPoint --> Peripheral : Route Calls
+
+Central --> OS_BLE : Scan / Connect / Write
+Peripheral --> OS_BLE : Advertise / Notify
+
+Central ..> EC : Send Events
+Peripheral ..> EC : Send Events
+
+@enduml
+
+@startuml BLE_Service_Scenario
+title HealthNYou BLE Chat - Connection & Chat Scenario
+
+actor "User A (Central)" as UserA
+participant "Device A\n(Flutter & Native)" as DevA
+participant "Device B\n(Flutter & Native)" as DevB
+actor "User B (Peripheral)" as UserB
+
+== 초기화 및 모드 설정 ==
+UserB -> DevB : 채팅방 개설 (Peripheral 모드)
+DevB -> DevB : startPeripheral()\n- Advertising (UUID: FF01)\n- LocalName: HealthNYou-Chat
+
+UserA -> DevA : 기기 찾기 (Central 모드)
+DevA -> DevA : startScan()
+DevA -> DevA : 주변 기기 감지\n(FF01 서비스 확인)
+DevA -> UserA : 검색된 기기 목록 표시
+
+== 연결 프로세스 (Connection) ==
+UserA -> DevA : Device B 선택 및 연결 요청
+DevA -> DevB : Connect 요청
+DevB -> DevB : 연결 수락 (Central 구독 감지)
+DevA -> DevA : 서비스(FF01) 및\n특성(FF02) 탐색
+DevA -> DevB : Notify 활성화 (구독 요청)
+
+DevA -> UserA : 연결 성공 (채팅 화면 이동)
+DevB -> UserB : 연결 성공 (채팅 화면 이동)
+
+== 메시지 전송 (Chatting) ==
+note over DevA, DevB : Service UUID: FF01 / Char UUID: FF02
+
+group Message: A -> B (Write Without Response)
+    UserA -> DevA : "안녕하세요" 입력
+    DevA -> DevB : Characteristic Write (FF02)
+    DevB -> DevB : onCharacteristicWriteRequest
+    DevB -> UserB : 메시지 표시 ("안녕하세요")
+end
+
+group Message: B -> A (Notify / Update Value)
+    UserB -> DevB : "반갑습니다" 입력
+    DevB -> DevA : Update Characteristic Value (FF02)
+    DevA -> DevA : onCharacteristicChanged
+    DevA -> UserA : 메시지 표시 ("반갑습니다")
+end
+
+== 연결 종료 (Disconnection) ==
+UserA -> DevA : 채팅 종료 (뒤로가기)
+DevA -> DevB : 연결 해제 요청
+DevB -> DevB : 구독 해제 감지
+DevB -> UserB : 상대방 나감 알림
+
+@enduml

@@ -1,0 +1,94 @@
+@startuml Current_Project_Structure
+title HealthNYou BLE Chat - Current Implementation Structure
+
+package "Flutter (Dart)" {
+    class ChatController {
+        - MethodChannel _methodChannel
+        - EventChannel _connectionChannel
+        - EventChannel _messageChannel
+        + startScan()
+        + connect(deviceId)
+        + sendMessage(text)
+    }
+}
+
+package "Native Bridge (Platform Channels)" {
+    map "MethodChannel: methods" as MC {
+        "startPeripheralMode" => startPeripheral()
+        "startScan" => startScan()
+        "connect" => connect()
+        "sendMessage" => sendMessage()
+    }
+    
+    map "EventChannel: messages" as ECM {
+        "Stream" => Incoming Message Data
+    }
+    
+    map "EventChannel: connection" as ECC {
+        "Stream" => Connection State (CONNECTED/DISCONNECTED)
+    }
+}
+
+package "iOS Native (Swift)" {
+    class AppDelegate {
+        - BleCentralManager centralManager
+        - BlePeripheralManager peripheralManager
+        + setupChannels()
+        + handleMethodCall()
+    }
+
+    class BleCentralManager {
+        <<CBCentralManagerDelegate>>
+        <<CBPeripheralDelegate>>
+        - SERVICE_UUID: FF01
+        - CHARACTERISTIC_UUID: FF02
+        + startScan()
+        + connect()
+        + sendMessage() : Write (FF02)
+    }
+
+    class BlePeripheralManager {
+        <<CBPeripheralManagerDelegate>>
+        - SERVICE_UUID: FF01
+        - CHARACTERISTIC_UUID: FF02
+        + startPeripheral()
+        + sendMessage() : Notify (FF02)
+    }
+}
+
+package "Android Native (Kotlin)" {
+    class MainActivity {
+        - BleCentralManager centralManager
+        - BlePeripheralManager peripheralManager
+    }
+
+    class "BleCentralManager (KT)" as CentralKT {
+        + scan()
+        + connect()
+    }
+    
+    class "BlePeripheralManager (KT)" as PeripheralKT {
+        + startAdvertising()
+    }
+}
+
+' Relations
+ChatController --> MC : Invoke
+ChatController ..> ECM : Listen
+ChatController ..> ECC : Listen
+
+MC --> AppDelegate : Method Call
+MC --> MainActivity : Method Call
+
+AppDelegate --> BleCentralManager : Delegates to
+AppDelegate --> BlePeripheralManager : Delegates to
+
+MainActivity --> CentralKT : Delegates to
+MainActivity --> PeripheralKT : Delegates to
+
+BleCentralManager ..> ECM : Sink Message
+BleCentralManager ..> ECC : Sink State
+BlePeripheralManager ..> ECM : Sink Message
+BlePeripheralManager ..> ECC : Sink State
+
+@enduml

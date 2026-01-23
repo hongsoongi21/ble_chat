@@ -1,0 +1,49 @@
+@startuml Easy_Concept_Map
+title [누구나 쉽게 이해하는] 블루투스 채팅 앱 작동 원리
+
+skinparam componentStyle rectangle
+
+actor "사용자 (User)" as User
+
+package "내 스마트폰 (My Phone)" {
+    
+    component "1. 채팅 앱 화면\n(Flutter UI)" as AppUI #LightBlue {
+        note right
+          사용자가 보고
+          조작하는 화면
+        end note
+    }
+
+    component "2. 내부 통역사\n(Bridge / Channel)" as Bridge #LightYellow {
+        note right
+          앱과 기계어 사이를
+          연결해주는 다리
+        end note
+    }
+
+    component "3. 블루투스 관리자\n(Native Manager)" as BLE_Manager #LightGreen {
+        note right
+          실제 블루투스 장치를
+          켜고 끄는 관리자
+        end note
+    }
+}
+
+cloud "무선 통신 (Air)" as Air #White
+
+package "상대방 스마트폰 (Other Phone)" {
+    component "블루투스 수신부" as OtherDevice #LightGray
+}
+
+' --- 흐름 연결 ---
+
+User -> AppUI : "안녕하세요" 입력\n(전송 버튼 터치)
+AppUI -> Bridge : 메시지 전달 요청\n"이 내용 좀 보내줘"
+Bridge -> BLE_Manager : 명령 변환\n"블루투스로 데이터 전송해"
+
+BLE_Manager =down=> Air : (( 📡 전파 발사 ))\n데이터를 쏘아 보냄
+
+Air =down=> OtherDevice : 상대방이 신호 수신
+OtherDevice ..> AppUI : (반대 과정으로) 화면에 표시
+
+@enduml
