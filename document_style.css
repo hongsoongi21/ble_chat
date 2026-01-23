@@ -1,0 +1,80 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+    line-height: 1.8;
+    color: #2c3e50;
+    max-width: 900px;
+    margin: 60px auto;
+    padding: 40px;
+    background-color: #ffffff;
+    box-shadow: 0 0 20px rgba(0,0,0,0.05);
+}
+h1 {
+    font-size: 2.5em;
+    color: #1a2a6c;
+    border-bottom: 3px solid #1a2a6c;
+    padding-bottom: 15px;
+    margin-bottom: 40px;
+    text-align: center;
+}
+h2 {
+    font-size: 1.8em;
+    color: #34495e;
+    border-left: 8px solid #3498db;
+    padding-left: 15px;
+    margin-top: 50px;
+    background-color: #f8f9fa;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+h3 {
+    font-size: 1.3em;
+    color: #2980b9;
+    margin-top: 30px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+code {
+    background-color: #f1f2f6;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+    font-size: 0.9em;
+    color: #e83e8c;
+}
+pre {
+    background-color: #2d3436;
+    color: #dfe6e9;
+    padding: 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    line-height: 1.5;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.2);
+}
+pre code {
+    color: #dfe6e9;
+    background-color: transparent;
+    padding: 0;
+}
+ul, ol {
+    margin-bottom: 20px;
+}
+li {
+    margin-bottom: 10px;
+}
+hr {
+    border: 0;
+    border-top: 1px solid #eee;
+    margin: 40px 0;
+}
+blockquote {
+    border-left: 5px solid #bdc3c7;
+    padding-left: 20px;
+    color: #7f8c8d;
+    font-style: italic;
+}
+.footer {
+    text-align: right;
+    font-size: 0.9em;
+    color: #95a5a6;
+    margin-top: 60px;
+}
